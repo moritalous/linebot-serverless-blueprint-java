@@ -1,0 +1,13 @@
+.gradle
+.serverless
+.settings
+.idea
+bin
+build
+node_modules
+
+.classpath
+.project
+*.log
+gradle-wrapper.build
+local.properties

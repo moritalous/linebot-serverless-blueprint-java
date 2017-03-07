@@ -1,0 +1,104 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: linebot-serverless-blueprint-java # NOTE: update this with your service name
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+
+provider:
+  name: aws
+  runtime: java8
+  profile: serverless
+
+# you can overwrite defaults here
+  stage: dev
+  region: ap-northeast-1
+# you can add statements to the Lambda function's IAM Role here
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:DescribeStream
+        - dynamodb:ListStream
+        - dynamodb:GetRecords
+        - dynamodb:GetShardIterator
+      Resource: 
+        - arn:aws:dynamodb:*:*:table/LineBotDynamodb
+        - Fn::GetAtt: [LineBotDynamodb, StreamArn]
+
+  environment: 
+    CHANNEL_SECRET: ${env:CHANNEL_SECRET}
+    CHANNEL_ACCESS_TOKEN: ${env:CHANNEL_ACCESS_TOKEN}
+
+package:
+  individually: true
+
+functions:
+  webhook:
+    handler: com.serverless.Handler
+    package:
+      artifact: webhook/build/distributions/webhook.zip
+    events:
+     - http:
+         path: webhook
+         method: post
+         integration: lambda
+         request:
+            parameters:
+              headers:
+                X-Line-Signature: true
+            template:
+              application/json: '{ "body": "$util.base64Encode($input.body)", "signature": "$input.params("X-Line-Signature")" }'
+
+  reply:
+    handler: com.serverless.Handler
+    package:
+      artifact: reply/build/distributions/reply.zip
+
+# you can add CloudFormation resource templates here
+resources:
+  Resources:
+    LineBotDynamodb:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: LineBotDynamodb
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
+
+    StreamEventMapping:
+      Type: AWS::Lambda::EventSourceMapping
+      Properties:
+        BatchSize: 20
+        EventSourceArn:
+          Fn::GetAtt: [LineBotDynamodb, StreamArn]
+        FunctionName:
+          Fn::GetAtt: [ReplyLambdaFunction, Arn]
+        StartingPosition: TRIM_HORIZON
+        Enabled: true
+
+#  Outputs:
+#     NewOutput:
+#       Description: "Description for the output"
+#       Value: "Some output value"

@@ -1,0 +1,19 @@
+{
+    "name": "linebot-serverless-blueprint-java",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "build": "gradlew build --daemon",
+        "predeploy": "npm run build",
+        "deploy": "node_modules/.bin/serverless deploy",
+        "remove": "node_modules/.bin/serverless remove"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "serverless": "^1.7.0"
+    }
+}
