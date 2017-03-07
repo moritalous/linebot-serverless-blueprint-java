@@ -41,60 +41,68 @@ public class Handler implements RequestHandler<DynamodbEvent, ApiGatewayResponse
         return objectMapper;
     }
 
+    /***
+     * Messaging APIリクエストを受けて、Reply messageの送信などを行います。
+     * @param callbackRequest Messaging APIリクエスト内容
+     */
+    private void reply(CallbackRequest callbackRequest) {
+        callbackRequest.getEvents().forEach(e -> {
+
+            if (e instanceof MessageEvent) {
+                MessageEvent<MessageContent> messageEvent = (MessageEvent<MessageContent>) e;
+                String replyToken = messageEvent.getReplyToken();
+                MessageContent content = messageEvent.getMessage();
+
+                if (content instanceof TextMessageContent) {
+                    String message = ((TextMessageContent) content).getText();
+
+                    LineMessagingService client = LineMessagingServiceBuilder.create(CHANNEL_ACCESS_TOKEN).build();
+
+                    List<Message> replyMessages = new ArrayList<>();
+                    replyMessages.add(new TextMessage(message));
+
+                    try {
+                        Response<BotApiResponse> response = client.replyMessage(new ReplyMessage(replyToken, replyMessages)).execute();
+                        if (response.isSuccessful()) {
+                            LOG.info(response.message());
+                        } else {
+                            LOG.warn(response.errorBody().string());
+                        }
+                    } catch (IOException e1) {
+                        LOG.error(e1);
+                    }
+                }
+                if (content instanceof ImageMessageContent) {
+                }
+                if (content instanceof LocationMessageContent) {
+                }
+                if (content instanceof AudioMessageContent) {
+                }
+                if (content instanceof VideoMessageContent) {
+                }
+                if (content instanceof StickerMessageContent) {
+                }
+                if (content instanceof FileMessageContent) {
+                } else {
+                }
+            } else if (e instanceof UnfollowEvent) {
+            } else if (e instanceof FollowEvent) {
+            } else if (e instanceof JoinEvent) {
+            } else if (e instanceof LeaveEvent) {
+            } else if (e instanceof PostbackEvent) {
+            } else if (e instanceof BeaconEvent) {
+            } else {
+            }
+        });
+    }
+
     @Override
     public ApiGatewayResponse handleRequest(DynamodbEvent ddbEvent, Context context) {
 
         ddbEvent.getRecords().forEach(event -> {
             try {
                 CallbackRequest callbackRequest = buildCallbackRequest(event);
-                callbackRequest.getEvents().forEach(e -> {
-
-                    if (e instanceof MessageEvent) {
-                        MessageEvent<MessageContent> messageEvent = (MessageEvent<MessageContent>) e;
-                        String replyToken = messageEvent.getReplyToken();
-                        MessageContent content = messageEvent.getMessage();
-
-                        if (content instanceof TextMessageContent) {
-                            String message = ((TextMessageContent) content).getText();
-
-                            LineMessagingService client = LineMessagingServiceBuilder.create(CHANNEL_ACCESS_TOKEN).build();
-
-                            List<Message> replyMessages = new ArrayList<>();
-                            replyMessages.add(new TextMessage(message));
-
-                            try {
-                                Response<BotApiResponse> response = client.replyMessage(new ReplyMessage(replyToken, replyMessages)).execute();
-                                if (response.isSuccessful()) {
-                                    LOG.info(response.message());
-                                } else {
-                                    LOG.warn(response.errorBody().string());
-                                }
-                            } catch (IOException e1) {
-                                LOG.error(e1);
-                            }
-                        }
-                        if (content instanceof ImageMessageContent) {
-                        }
-                        if (content instanceof LocationMessageContent) {
-                        }
-                        if (content instanceof AudioMessageContent) {
-                        }
-                        if (content instanceof VideoMessageContent) {
-                        }
-                        if (content instanceof StickerMessageContent) {
-                        }
-                        if (content instanceof FileMessageContent) {
-                        } else {
-                        }
-                    } else if (e instanceof UnfollowEvent) {
-                    } else if (e instanceof FollowEvent) {
-                    } else if (e instanceof JoinEvent) {
-                    } else if (e instanceof LeaveEvent) {
-                    } else if (e instanceof PostbackEvent) {
-                    } else if (e instanceof BeaconEvent) {
-                    } else {
-                    }
-                });
+                reply(callbackRequest);
             } catch (Exception e) {
                 LOG.error(e);
             }
