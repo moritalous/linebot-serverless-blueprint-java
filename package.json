@@ -7,8 +7,8 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "build": "gradlew build --daemon",
         "predeploy": "npm run build",
-        "deploy": "node_modules/.bin/serverless deploy",
-        "remove": "node_modules/.bin/serverless remove"
+        "deploy": "serverless deploy",
+        "remove": "serverless remove"
     },
     "keywords": [],
     "author": "",
